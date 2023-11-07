@@ -1,17 +1,14 @@
-import type { Request, Response } from 'express'
-import { User } from '../models'
 // import bcrypt from 'bcrypt'
+import { UserModel } from '../models'
 
-const isUserValid = (user: {
-  username: string
-  email: string
-  password: string
-}) => {
-  return user.username && user.email && user.password
-}
+// Helpers
+import { isUserValid } from '../helpers'
+
+// Types
+import type { Request, Response } from 'express'
 
 const getUsers = async (_: Request, response: Response) => {
-  const users = await User.find()
+  const users = await UserModel.find()
   response.send({
     timestamp: Date.now(),
     data: users || []
@@ -23,10 +20,18 @@ const createUser = async (request: Request, response: Response) => {
     const user = request.body
     if (!isUserValid(user)) throw Error('Invalid Request.')
 
-    const output = await User.create(user)
+    const users = await UserModel.find({ email: user.email })
+    if (users.length > 0) throw Error('User already exist on the database.')
+
+    const newUser = await UserModel.create(user)
+
     response.send({
       timestamp: Date.now(),
-      data: output
+      data: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email
+      }
     })
   } catch (error) {
     console.error(error)

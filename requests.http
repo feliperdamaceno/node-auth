@@ -1,8 +1,10 @@
+# GET http://localhost:3000/users
+
 POST http://localhost:3000/users
 Content-Type: application/json
 
 {
-  "username": "feliperdamaceno",
-  "email": "feliperdamaceno@test.com",
+  "username": "carlosuser",
+  "email": "carlostest@test.com",
   "password": "123456789"
 }
