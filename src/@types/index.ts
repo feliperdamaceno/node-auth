@@ -5,3 +5,7 @@ export interface User extends Document {
   email: string
   password: string
 }
+
+export interface Session extends Document {
+  username: string
+}

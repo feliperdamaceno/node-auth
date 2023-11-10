@@ -1,36 +1,44 @@
-// import bcrypt from 'bcrypt'
+import bcrypt from 'bcrypt'
+
+// Models
 import { UserModel } from '../models'
 
-// Helpers
-import { isUserValid } from '../helpers'
+// Schema
+import { userSchema } from '../schema'
 
 // Types
 import type { Request, Response } from 'express'
+import type { User } from '../@types'
 
 const getUsers = async (_: Request, response: Response) => {
   const users = await UserModel.find()
+  const sanitized = users.map(({ username, email }) => ({ username, email }))
   response.send({
     timestamp: Date.now(),
-    data: users || []
+    data: sanitized
   })
 }
 
 const createUser = async (request: Request, response: Response) => {
+  const user = request.body as User
+  const { error } = userSchema.validate(user)
+
   try {
-    const user = request.body
-    if (!isUserValid(user)) throw Error('Invalid Request.')
+    if (error) throw Error(error.message)
 
     const users = await UserModel.find({ email: user.email })
     if (users.length > 0) throw Error('User already exist on the database.')
 
-    const newUser = await UserModel.create(user)
+    const hashedPassword = await bcrypt.hash(user.password, 10)
+    const record = await UserModel.create({ ...user, password: hashedPassword })
 
-    response.send({
+    response.status(201).send({
       timestamp: Date.now(),
+      message: 'User created successfully.',
+      code: '200 OK',
       data: {
-        id: newUser._id,
-        username: newUser.username,
-        email: newUser.email
+        username: record.username,
+        email: record.email
       }
     })
   } catch (error) {
@@ -39,13 +47,15 @@ const createUser = async (request: Request, response: Response) => {
     if (error instanceof Error) {
       return response.status(400).send({
         timestamp: Date.now(),
-        message: error.message
+        message: error.message,
+        code: '400 Bad Request'
       })
     }
 
     response.status(500).send({
       timestamp: Date.now(),
-      message: 'Internal Server Error'
+      message: 'Internal server error. Please try again later.',
+      code: '500 Internal Server Error'
     })
   }
 }
