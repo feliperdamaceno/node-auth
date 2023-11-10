@@ -11,3 +11,7 @@ export const userSchema = Joi.object({
     )
     .required()
 })
+
+export const passwordSchema = Joi.object({
+  password: userSchema.extract('password')
+})

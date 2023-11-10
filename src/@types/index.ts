@@ -8,4 +8,5 @@ export interface User extends Document {
 
 export interface Session extends Document {
   username: string
+  expireDate: number
 }
