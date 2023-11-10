@@ -100,7 +100,7 @@ const updateUser = async (request: Request, response: Response) => {
   const user = request.body as User
 
   try {
-    if (!username) throw Error('Invalid username.')
+    if (!username) throw Error('Invalid request. Missing username.')
 
     if (user.username) throw Error('Username cannot be changed.')
 
@@ -143,11 +143,41 @@ const updateUser = async (request: Request, response: Response) => {
   }
 }
 
-// const deleteUser = async (request: Request, response: Response) => {}
+const deleteUser = async (request: Request, response: Response) => {
+  const { username } = request.params as { username: string }
+
+  try {
+    const user = await UserModel.deleteOne({ username })
+    if (user.deletedCount === 0) throw Error('User not found.')
+
+    response.send({
+      timestamp: Date.now(),
+      message: 'Operation successful.',
+      code: '200 OK'
+    })
+  } catch (error) {
+    console.error(error)
+
+    if (error instanceof Error) {
+      return response.status(404).send({
+        timestamp: Date.now(),
+        message: error.message,
+        code: '404 Not Found'
+      })
+    }
+
+    response.status(500).send({
+      timestamp: Date.now(),
+      message: 'Internal server error. Please try again later.',
+      code: '500 Internal Server Error'
+    })
+  }
+}
 
 export default {
   createUser,
   getOneUser,
   getUsers,
-  updateUser
+  updateUser,
+  deleteUser
 }

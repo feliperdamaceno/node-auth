@@ -8,5 +8,6 @@ router.get('/', usersController.getUsers)
 router.post('/signup', usersController.createUser)
 router.get('/:username', usersController.getOneUser)
 router.post('/:username', usersController.updateUser)
+router.delete('/:username', usersController.deleteUser)
 
 export default router
