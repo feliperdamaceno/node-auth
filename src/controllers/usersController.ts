@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt'
 import { UserModel } from '../models'
 
 // Schema
-import { userSchema, passwordSchema } from '../schema'
+import { userSchema, partialUserSchema } from '../schema'
 
 // Types
 import type { Request, Response } from 'express'
@@ -53,11 +53,46 @@ const createUser = async (request: Request, response: Response) => {
 
 const getUsers = async (_: Request, response: Response) => {
   const users = await UserModel.find()
-  const sanitized = users.map(({ username, email }) => ({ username, email }))
+  const output = users.map(({ username, email }) => ({ username, email }))
   response.send({
     timestamp: Date.now(),
-    data: sanitized
+    message: 'Operation successful.',
+    code: '200 OK',
+    data: output
   })
+}
+
+const getOneUser = async (request: Request, response: Response) => {
+  const { username } = request.params as { username: string }
+
+  try {
+    const user = await UserModel.find({ username })
+    if (user.length === 0) throw Error('User not found.')
+
+    const output = user.map(({ username, email }) => ({ username, email }))
+    response.send({
+      timestamp: Date.now(),
+      message: 'Operation successful.',
+      code: '200 OK',
+      data: output
+    })
+  } catch (error) {
+    console.error(error)
+
+    if (error instanceof Error) {
+      return response.status(404).send({
+        timestamp: Date.now(),
+        message: error.message,
+        code: '404 Not Found'
+      })
+    }
+
+    response.status(500).send({
+      timestamp: Date.now(),
+      message: 'Internal server error. Please try again later.',
+      code: '500 Internal Server Error'
+    })
+  }
 }
 
 const updateUser = async (request: Request, response: Response) => {
@@ -67,8 +102,15 @@ const updateUser = async (request: Request, response: Response) => {
   try {
     if (!username) throw Error('Invalid username.')
 
+    if (user.username) throw Error('Username cannot be changed.')
+
+    if (user.email) {
+      const { error } = partialUserSchema('email').validate(user.email)
+      if (error) throw Error(error.message)
+    }
+
     if (user.password) {
-      const { error } = passwordSchema.validate({ password: user.password })
+      const { error } = partialUserSchema('password').validate(user.password)
       if (error) throw Error(error.message)
 
       const hashedPassword = await bcrypt.hash(user.password, 10)
@@ -101,8 +143,11 @@ const updateUser = async (request: Request, response: Response) => {
   }
 }
 
+// const deleteUser = async (request: Request, response: Response) => {}
+
 export default {
   createUser,
+  getOneUser,
   getUsers,
   updateUser
 }
