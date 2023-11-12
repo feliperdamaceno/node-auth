@@ -1,5 +1,8 @@
 import bcrypt from 'bcrypt'
 
+// Helpers
+import { createResponseUser } from '../helpers'
+
 // Models
 import { UserModel } from '../models'
 
@@ -18,7 +21,7 @@ const createUser = async (request: Request, response: Response) => {
     if (error) throw Error(error.message)
 
     const users = await UserModel.find({ email: user.email })
-    if (users.length > 0) throw Error('User already exist on the database.')
+    if (users.length) throw Error('User already exist on the database.')
 
     const hashedPassword = await bcrypt.hash(user.password, 10)
     const record = await UserModel.create({ ...user, password: hashedPassword })
@@ -27,10 +30,7 @@ const createUser = async (request: Request, response: Response) => {
       timestamp: Date.now(),
       message: 'User created successfully.',
       code: '200 OK',
-      data: {
-        username: record.username,
-        email: record.email
-      }
+      data: createResponseUser([record])
     })
   } catch (error) {
     console.error(error)
@@ -53,28 +53,26 @@ const createUser = async (request: Request, response: Response) => {
 
 const getUsers = async (_: Request, response: Response) => {
   const users = await UserModel.find()
-  const output = users.map(({ username, email }) => ({ username, email }))
   response.send({
     timestamp: Date.now(),
     message: 'Operation successful.',
     code: '200 OK',
-    data: output
+    data: createResponseUser(users)
   })
 }
 
 const getOneUser = async (request: Request, response: Response) => {
-  const { username } = request.params as { username: string }
+  const { email } = request.params
 
   try {
-    const user = await UserModel.find({ username })
+    const user = await UserModel.find({ email })
     if (user.length === 0) throw Error('User not found.')
 
-    const output = user.map(({ username, email }) => ({ username, email }))
     response.send({
       timestamp: Date.now(),
       message: 'Operation successful.',
       code: '200 OK',
-      data: output
+      data: createResponseUser(user)
     })
   } catch (error) {
     console.error(error)
@@ -96,28 +94,33 @@ const getOneUser = async (request: Request, response: Response) => {
 }
 
 const updateUser = async (request: Request, response: Response) => {
-  const { username } = request.params as { username: string }
-  const user = request.body as User
+  const { email } = request.params
+  const updatedUser = request.body as Partial<User>
+
+  const user = await UserModel.find({ email })
+  if (user.length === 0) {
+    return response.status(404).send({
+      timestamp: Date.now(),
+      message: 'User not found.',
+      code: '404 Not Found'
+    })
+  }
 
   try {
-    if (!username) throw Error('Invalid request. Missing username.')
-
-    if (user.username) throw Error('Username cannot be changed.')
-
-    if (user.email) {
-      const { error } = partialUserSchema('email').validate(user.email)
-      if (error) throw Error(error.message)
+    if (updatedUser.email) {
+      throw Error('Email is a unique identifier and cannot be changed.')
     }
 
-    if (user.password) {
-      const { error } = partialUserSchema('password').validate(user.password)
+    Object.entries(updatedUser).forEach(([key, value]) => {
+      const { error } = partialUserSchema(key as keyof User).validate(value)
       if (error) throw Error(error.message)
+    })
 
-      const hashedPassword = await bcrypt.hash(user.password, 10)
-      user.password = hashedPassword
+    if (updatedUser.password) {
+      updatedUser.password = await bcrypt.hash(updatedUser.password, 10)
     }
 
-    await UserModel.updateOne({ username: username }, user)
+    await UserModel.updateOne({ email }, updatedUser)
 
     response.status(200).send({
       timestamp: Date.now(),
@@ -144,10 +147,10 @@ const updateUser = async (request: Request, response: Response) => {
 }
 
 const deleteUser = async (request: Request, response: Response) => {
-  const { username } = request.params as { username: string }
+  const { email } = request.params
 
   try {
-    const user = await UserModel.deleteOne({ username })
+    const user = await UserModel.deleteOne({ email })
     if (user.deletedCount === 0) throw Error('User not found.')
 
     response.send({

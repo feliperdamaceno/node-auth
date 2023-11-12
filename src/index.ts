@@ -18,7 +18,11 @@ app.use(express.json()).use(cors())
 
 // Routes
 app.get('/', (_, response) =>
-  response.send({ timestamp: Date.now(), message: 'Server Working' })
+  response.status(200).send({
+    timestamp: Date.now(),
+    message: 'Server Working.',
+    code: '200 OK'
+  })
 )
 
 app.use('/users', users)
