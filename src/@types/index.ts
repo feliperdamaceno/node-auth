@@ -7,8 +7,3 @@ export interface User extends Document {
 }
 
 export type ResponseUser = Pick<User, 'username' | 'email'>
-
-export interface Session extends Document {
-  username: string
-  expireDate: number
-}

@@ -7,7 +7,7 @@ import { createResponseUser } from '../helpers'
 import { UserModel } from '../models'
 
 // Schema
-import { userSchema, partialUserSchema } from '../schema'
+import { userSchema, partialUserSchema } from '../schema/userSchema'
 
 // Types
 import type { Request, Response } from 'express'
@@ -177,10 +177,53 @@ const deleteUser = async (request: Request, response: Response) => {
   }
 }
 
+const loginUser = async (request: Request, response: Response) => {
+  const { email, password } = request.body as Pick<User, 'email' | 'password'>
+
+  try {
+    const user = await UserModel.find({ email })
+    if (user.length === 0) {
+      return response.status(404).send({
+        timestamp: Date.now(),
+        message: 'User not found.',
+        code: '404 Not Found'
+      })
+    }
+
+    const isValid = await bcrypt.compare(password || '', user[0].password)
+    if (!isValid) {
+      throw Error('Unauthorized access. Please provide valid credentials.')
+    }
+
+    response.send({
+      timestamp: Date.now(),
+      message: `${user[0].username} logged in successfully.`,
+      code: '200 OK'
+    })
+  } catch (error) {
+    console.error(error)
+
+    if (error instanceof Error) {
+      return response.status(401).send({
+        timestamp: Date.now(),
+        message: error.message,
+        code: '401 Unauthorized'
+      })
+    }
+
+    response.status(500).send({
+      timestamp: Date.now(),
+      message: 'Internal server error. Please try again later.',
+      code: '500 Internal Server Error'
+    })
+  }
+}
+
 export default {
   createUser,
   getOneUser,
   getUsers,
   updateUser,
-  deleteUser
+  deleteUser,
+  loginUser
 }
