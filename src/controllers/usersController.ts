@@ -1,7 +1,14 @@
 import bcrypt from 'bcrypt'
 
 // Helpers
-import { createResponseUser } from '../helpers'
+import {
+  createResponseUser,
+  createWebToken,
+  defineSessionExpiringDate
+} from '../helpers'
+
+// Constants
+import { SESSION_COOKIE } from '../constants'
 
 // Models
 import { UserModel } from '../models'
@@ -195,11 +202,17 @@ const loginUser = async (request: Request, response: Response) => {
       throw Error('Unauthorized access. Please provide valid credentials.')
     }
 
-    response.send({
-      timestamp: Date.now(),
-      message: `${user[0].username} logged in successfully.`,
-      code: '200 OK'
-    })
+    const sessionToken = createWebToken(email, SESSION_COOKIE.DAYS_TO_EXPIRE)
+
+    response
+      .cookie(SESSION_COOKIE.NAME, sessionToken, {
+        expires: defineSessionExpiringDate(SESSION_COOKIE.DAYS_TO_EXPIRE)
+      })
+      .send({
+        timestamp: Date.now(),
+        message: `${user[0].username} logged in successfully.`,
+        code: '200 OK'
+      })
   } catch (error) {
     console.error(error)
 

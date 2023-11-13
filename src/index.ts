@@ -1,20 +1,30 @@
 import cors from 'cors'
+import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv'
 import express from 'express'
 import mongoose from 'mongoose'
 
 import { users } from './routes'
+import { validateAuthUser } from './middlewares'
 
 dotenv.config()
-mongoose.connect(process.env.DATABASE_URL!)
 
-// Server setup
-const PORT = 3000
+// Database Connect
+mongoose.connect(process.env.MONGODB_URL!)
+
+// Server Setup
+const PORT = process.env.PORT || 3000
 const app = express()
-app.listen(PORT, () => console.log(`Server listening on http://localhost:3000`))
+
+app.listen(PORT, () =>
+  console.log(`Server listening on http://localhost:${PORT}`)
+)
 
 // Middlewares
-app.use(express.json()).use(cors())
+app.use(express.json())
+app.use(cors())
+app.use(cookieParser())
+app.use(validateAuthUser)
 
 // Routes
 app.get('/', (_, response) =>
