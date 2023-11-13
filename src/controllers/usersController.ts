@@ -1,11 +1,10 @@
 import bcrypt from 'bcrypt'
 
 // Helpers
-import {
-  createResponseUser,
-  createWebToken,
-  defineSessionExpiringDate
-} from '../helpers'
+import { createResponseUser } from '../helpers'
+
+// Auth
+import { createWebToken, defineSessionExpiringDate } from '../auth'
 
 // Constants
 import { SESSION_COOKIE } from '../constants'
@@ -31,13 +30,13 @@ const createUser = async (request: Request, response: Response) => {
     if (users.length) throw Error('User already exist on the database.')
 
     const hashedPassword = await bcrypt.hash(user.password, 10)
-    const record = await UserModel.create({ ...user, password: hashedPassword })
+    const data = await UserModel.create({ ...user, password: hashedPassword })
 
     response.status(201).send({
       timestamp: Date.now(),
       message: 'User created successfully.',
       code: '200 OK',
-      data: createResponseUser([record])
+      data: createResponseUser([data])
     })
   } catch (error) {
     console.error(error)
