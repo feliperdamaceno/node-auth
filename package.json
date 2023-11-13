@@ -1,7 +1,7 @@
 {
-  "name": "node-auth",
+  "name": "node-authorization-api",
   "version": "1.0.0",
-  "description": "",
+  "description": "A Node Authorization API that allows users to perform authentication and authorization actions through a set of RESTful routes.",
   "main": "index.ts",
   "scripts": {
     "start": "ts-node-dev --respawn src/index.ts",
