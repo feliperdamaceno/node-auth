@@ -19,21 +19,38 @@ export default async function validateAuthUser(
     return next()
   }
 
-  const sessionToken = request.cookies[SESSION_COOKIE.NAME]
-  const decodedToken = jtw.decode(sessionToken) as JwtPayload
-  const user = await UserModel.find({ email: decodedToken?.email })
+  try {
+    const sessionToken = request.cookies[SESSION_COOKIE.NAME]
 
-  const isAuthorized =
-    user.length &&
-    sessionToken &&
-    decodedToken &&
-    new Date(decodedToken.exp!) < new Date()
+    const decodedToken = jtw.verify(
+      sessionToken,
+      process.env.JTW_SECRET!
+    ) as JwtPayload
 
-  if (isAuthorized) return next()
+    const user = await UserModel.find({ email: decodedToken.email })
+    const isCookieNotExpired = new Date(decodedToken.exp!) < new Date()
 
-  response.status(401).send({
-    timestamp: Date.now(),
-    message: 'Unauthorized access. Please login to access this resource.',
-    code: '401 Unauthorized'
-  })
+    const isAuthorized =
+      user.length && sessionToken && decodedToken && isCookieNotExpired
+
+    if (isAuthorized) return next()
+
+    throw Error('Unauthorized access. Please login to access this resource.')
+  } catch (error) {
+    console.error(error)
+
+    if (error instanceof Error) {
+      return response.status(403).send({
+        timestamp: Date.now(),
+        message: error.message,
+        code: '403 Forbidden'
+      })
+    }
+
+    response.status(500).send({
+      timestamp: Date.now(),
+      message: 'Internal server error. Please try again later.',
+      code: '500 Internal Server Error'
+    })
+  }
 }
