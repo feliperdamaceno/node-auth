@@ -84,4 +84,4 @@ This is an open-source library and is available under the [**MIT License**](LICE
 
 ## Contact me
 
-Linkedin: [feliperdamaceno](https://www.linkedin.com/in/feliperdamaceno
+Linkedin: [feliperdamaceno](https://www.linkedin.com/in/feliperdamaceno)
