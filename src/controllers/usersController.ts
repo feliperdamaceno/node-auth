@@ -35,7 +35,7 @@ const createUser = async (request: Request, response: Response) => {
     response.status(201).send({
       timestamp: Date.now(),
       message: 'User created successfully.',
-      code: '200 OK',
+      code: '201 Created',
       data: createResponseUser([data])
     })
   } catch (error) {
@@ -59,7 +59,7 @@ const createUser = async (request: Request, response: Response) => {
 
 const getUsers = async (_: Request, response: Response) => {
   const users = await UserModel.find()
-  response.send({
+  response.status(200).send({
     timestamp: Date.now(),
     message: 'Operation successful.',
     code: '200 OK',
@@ -74,7 +74,7 @@ const getOneUser = async (request: Request, response: Response) => {
     const user = await UserModel.find({ email })
     if (user.length === 0) throw Error('User not found.')
 
-    response.send({
+    response.status(200).send({
       timestamp: Date.now(),
       message: 'Operation successful.',
       code: '200 OK',
@@ -159,7 +159,7 @@ const deleteUser = async (request: Request, response: Response) => {
     const user = await UserModel.deleteOne({ email })
     if (user.deletedCount === 0) throw Error('User not found.')
 
-    response.send({
+    response.status(200).send({
       timestamp: Date.now(),
       message: 'Operation successful.',
       code: '200 OK'
@@ -207,6 +207,7 @@ const loginUser = async (request: Request, response: Response) => {
       .cookie(SESSION_COOKIE.NAME, sessionToken, {
         expires: defineSessionExpiringDate(SESSION_COOKIE.DAYS_TO_EXPIRE)
       })
+      .status(200)
       .send({
         timestamp: Date.now(),
         message: `${user[0].username} logged in successfully.`,
